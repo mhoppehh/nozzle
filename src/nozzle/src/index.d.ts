@@ -7,6 +7,8 @@ declare class CanvasDrawer {
   setBrushMode(enabled: boolean): void
   getBrushMode(): boolean
   setBrushImage(id: string): void
+  setBrushImages(src: string[]): void
+  setBrushFilters(filters: string): void
   startDrawing(point: { x: number; y: number }): void
   draw(point: { x: number; y: number }): void
   stopDrawing(): void

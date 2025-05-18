@@ -1,9 +1,19 @@
 import { useRef, useEffect, ChangeEvent } from 'react'
 
-import CanvasDrawer from '../../nozzle/src'
 import './App.css'
-import { Button, Input, Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from './components'
+import CanvasDrawer from '../../nozzle/src'
 import { CachedImage, useImageCache } from './hooks/useImageCache'
+import {
+  BrushMenu,
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './components'
 import { cn } from './lib/utils'
 
 const CanvasComponent = () => {
@@ -11,7 +21,13 @@ const CanvasComponent = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const drawerRef = useRef<CanvasDrawer | null>(null)
 
-  const { images, processAndCacheFile } = useImageCache()
+  const { images, isLoading, processAndCacheFile } = useImageCache()
+
+  useEffect(() => {
+    if (drawerRef.current) {
+      drawerRef.current.setBrushImages(images.map(image => image.src))
+    }
+  }, [isLoading, images])
 
   useEffect(() => {
     const container = containerRef.current
@@ -24,11 +40,14 @@ const CanvasComponent = () => {
       const drawer = new CanvasDrawer(canvas)
       drawerRef.current = drawer
 
+      drawerRef.current.setBrushImages(images.map(image => image.src))
+
       const handleMouseDown = (e: MouseEvent) => {
         drawer.startDrawing({
           x: e.offsetX,
           y: e.offsetY,
         })
+        drawer.draw({ x: e.offsetX, y: e.offsetY })
       }
 
       const handleMouseMove = (e: MouseEvent) => {
@@ -112,7 +131,7 @@ const CanvasComponent = () => {
       >
         <Input type='file' onChange={updateImage} id='file_input' />
         {images.map((image: CachedImage) => {
-          return <img key={image.name} src={image.src} id={image.name} width={40} height={40} />
+          return <BrushMenu drawerRef={drawerRef} image={image} />
         })}
         <Button variant='destructive' onClick={handleClearClick}>
           Clear Canvas
@@ -127,7 +146,7 @@ const CanvasComponent = () => {
               <SelectItem value='pen'>Pen</SelectItem>
               {images.map((image: CachedImage) => {
                 return (
-                  <SelectItem key={image.name} value={image.name}>
+                  <SelectItem key={image.name} value={image.src}>
                     {image.name}
                   </SelectItem>
                 )

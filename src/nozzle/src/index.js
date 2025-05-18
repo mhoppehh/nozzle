@@ -1,4 +1,4 @@
-// canvasDrawer.js
+import { ImageLoader } from './image-loader'
 
 class CanvasDrawer {
   /**
@@ -20,7 +20,6 @@ class CanvasDrawer {
     this.lastT = 0 // Time of last point
     this.lastX = 0 // X coordinate of last point
     this.lastY = 0 // Y coordinate of last point
-    this.imageId = null
 
     // Rolling average settings for brush smoothing
     this.bufferSize = 20
@@ -30,6 +29,11 @@ class CanvasDrawer {
 
     // Brush settings
     this.circlesPerPixel = 0.1 // Number of circles per pixel of line length
+    this.brushFilters = ''
+
+    this.images = []
+    this.image = null
+    this.imageLoader = new ImageLoader()
 
     // Initialize canvas settings
     this._init()
@@ -149,9 +153,9 @@ class CanvasDrawer {
       // Calculate radius based on interpolated average distance
       const r = ((avgDistance - avgDistanceLast) / numCircles) * (i + avgDistanceLast)
 
-      const img = document.getElementById(this.imageId)
+      // const img = document.getElementById(this.imageId)
 
-      this.ctx.drawImage(img, circleX - 100, circleY - 100, 200, 200)
+      this.ctx.drawImage(this.image, circleX - 100, circleY - 100, 200, 200)
     }
   }
 
@@ -187,12 +191,6 @@ class CanvasDrawer {
    */
   setBrushMode(enabled) {
     this.brushMode = enabled
-
-    if (enabled) {
-      this.ctx.filter = 'invert(1) opacity(10%)'
-    } else {
-      this.ctx.filter = 'invert(0) opacity(100%)'
-    }
   }
 
   /**
@@ -203,8 +201,32 @@ class CanvasDrawer {
     return this.brushMode
   }
 
-  setBrushImage(id) {
-    this.imageId = id
+  setBrushImage(src) {
+    const htmlImage = this.images.find(image => (image.src = src))
+
+    if (!htmlImage) console.error('Could not find image.')
+
+    this.image = htmlImage
+  }
+
+  setBrushImages(srcArray) {
+    this.imageLoader.addImages(srcArray)
+
+    this.imageLoader
+      .load()
+      .then(images => {
+        console.log('ImageLoader (initial load + added): All images loaded successfully:', images)
+        console.log('Number of loaded images:', images.length) // Should be 3
+
+        this.images = images
+      })
+      .catch(error => {
+        console.error('ImageLoader: An error occurred:', loader.getError() || error)
+      })
+  }
+
+  setBrushFilters(filters) {
+    this.brushFilters = filters
   }
 
   /**
@@ -222,6 +244,12 @@ class CanvasDrawer {
     this.bufferIndex = 0
 
     this.pointBuffer.fill({ x: point.x, y: point.y })
+
+    if (this.brushMode) {
+      this.ctx.filter = this.brushFilters
+    } else {
+      this.ctx.filter = 'invert(0) opacity(100%)'
+    }
   }
 
   /**
